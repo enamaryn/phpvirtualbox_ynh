@@ -1,0 +1,140 @@
+#!/bin/bash
+
+#=================================================
+# GENERIC STARTING
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source /usr/share/yunohost/helpers
+source common.sh
+#=================================================
+# MANAGE FAILURE OF THE SCRIPT
+#=================================================
+
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
+app=$YNH_APP_INSTANCE_NAME
+domain=$YNH_APP_ARG_DOMAIN
+path=$YNH_APP_ARG_PATH
+admin=$YNH_APP_ARG_ADMIN
+language=$YNH_APP_ARG_LANGUAGE
+vboxip=$YNH_APP_ARG_VBOXIP
+
+ynh_app_setting_set "$app" admin "$admin"
+ynh_app_setting_set "$app" language "$language"
+
+vboxpassword=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c10)
+
+
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THIS ARGS
+#=================================================
+
+# Normalize the url path syntax
+path=$(ynh_normalize_url_path $path)
+
+# Check web path availability
+ynh_webpath_available $domain $path
+# Register (book) web path
+ynh_webpath_register $app $domain $path
+
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
+
+ynh_app_setting_set $app domain $domain
+ynh_app_setting_set $app path $path
+  
+#=================================================
+# ADD VIRTUALBOX REPO
+#=================================================
+
+sudo sh -c "echo 'deb http://download.virtualbox.org/virtualbox/debian jessie contrib' > /etc/apt/sources.list.d/virtualbox.list"
+wget -q http://download.virtualbox.org/virtualbox/debian/oracle_vbox_2016.asc -O- | sudo apt-key add -
+sudo apt-get update
+
+#=================================================
+# INSTALL VIRTUALBOX & DEPENDANCIES
+#=================================================
+
+# check dependances
+if ! ynh_package_is_installed "php-pear" ; then
+  ynh_package_install "php-pear"
+fi
+
+if ! ynh_package_is_installed "unzip" ; then
+  ynh_package_install "unzip"
+fi
+  
+if ! ynh_package_is_installed "virtualbox-$VBOX_VERSION" ; then
+  ynh_package_install "virtualbox-$VBOX_VERSION"
+fi
+
+#=================================================
+# CONFIGURE VBOXWEBSERV
+#=================================================
+        
+datadir=/home/yunohost.app/$app
+                             
+wget -q $VBOX_DOWNLOAD/$VBOX_EXTPACK
+yes | sudo VBoxManage extpack install Oracle_VM_VirtualBox_Extension_Pack-5.2.6-120293.vbox-extpack
+sudo useradd -p $(mkpasswd $vboxpassword) -d $datadir -m -g vboxusers -s /bin/bash vbox
+sudo sh -c "echo "VBOXWEB_USER=vbox" > /etc/default/virtualbox"
+sudo sh -c "echo "VBOXWEB_HOST=127.0.0.1" >> /etc/default/virtualbox"
+sudo mv ../conf/vboxweb_ynh.service /lib/systemd/system/vboxweb_ynh.service
+sudo mkdir /run/vboxweb
+sudo chown vbox:vboxusers /run/vboxweb
+sudo chmod 755 /run/vboxweb
+sudo systemctl enable vboxweb_ynh
+wget -q -P $datadir $VBOX_DOWNLOAD/$VBOX_GUEST
+sudo chown -R vbox: "$datadir"
+sudo service vboxweb_ynh start              
+
+#=================================================
+# INSTALL PHPVIRTUALBOX
+#=================================================
+
+src_path=/var/www/$app
+                             
+git clone https://github.com/phpvirtualbox/phpvirtualbox.git
+sudo mkdir $src_path
+sudo mv phpvirtualbox/* $src_path/
+
+# Modifiy Phpvirtualbox conf
+vbox_conf=../conf/config.php-example
+sed -i "s@VBOX_IP@$vboxip@g" $vbox_conf
+sed -i "s@VBOX_PASSWORD@$vboxpassword@g" $vbox_conf
+sed -i "s@LANGUAGE@$language@g" $vbox_conf
+sed -i "s@ADMINUSER@$admin@g" $vbox_conf
+sed -i "s@DATADIR@$datadir@g" $vbox_conf
+sudo cp $vbox_conf  $src_path/config.php
+
+
+# Modify Nginx configuration file and copy it to Nginx conf directory
+nginx_conf=../conf/nginx.conf
+sed -i "s@YNH_WWW_PATH@$path@g" $nginx_conf
+sed -i "s@YNH_WWW_ALIAS@$src_path/@g" $nginx_conf
+sed -i "s@YNH_WWW_APP@$app@g" $nginx_conf
+sudo cp $nginx_conf /etc/nginx/conf.d/$domain.d/$app.conf
+
+# Modify PHP-fpm
+phpfpm_conf=../conf/php-fpm.conf
+sed -i "s@YNH_WWW_APP@$app@g" $phpfpm_conf
+sed -i "s@YNH_WWW_ALIAS@$src_path/@g" $phpfpm_conf
+finalphpconf=/etc/php5/fpm/pool.d/$app.conf
+sudo cp ../conf/php-fpm.conf $finalphpconf
+sudo chown root: $finalphpconf
+sudo chmod 644 $finalphpconf
+sudo chown -R www-data:www-data $src_path
+
+# Reload services
+sudo service php5-fpm reload
+sudo service nginx reload
+
+

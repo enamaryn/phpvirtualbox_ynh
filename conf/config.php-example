@@ -1,0 +1,54 @@
+<?php
+class phpVBoxConfig {
+var $username = 'vbox';
+var $password = 'VBOX_PASSWORD';
+var $location = 'http://127.0.0.1:18083/';
+var $language = 'LANGUAGE';
+
+/* Set the standard VRDE Port Number / Range, e.g. 1010-1020 or 1027 */
+var $vrdeports = '9000-9100';
+var $noAuth = false;
+var $authLib = 'LDAP';
+var $authConfig = array(
+   'host' => 'localhost', 
+   'bind_dn' => 'uid=%s, ou=users, dc=yunohost, dc=org', 
+   'adminUser' => 'ADMINUSER'
+);
+var $consoleHost = 'VBOX_IP';
+var $noPreview = false;
+var $previewUpdateInterval = 5;
+var $previewWidth = 180;
+var $maxProgressList = 5;
+var $previewAspectRatio = 1.6;
+var $enableCustomIcons = true;
+var $phpVboxGroups = false;
+var $deleteOnRemove = true;
+var $browserRestrictFiles = array('.iso','.vdi','.vmdk','.img','.bin','.vhd','.hdd','.ovf','.ova','.xml','.vbox','.cdr','.dmg','.ima','.dsk','.vfd');
+var $browserRestrictFolders = array('DATADIR'); 
+var $browserLocal = true;
+var $browserDisable = true;
+var $noWindowsDriveList = true;
+var $forceWindowsAllDriveList = false;
+var $hostMemInfoRefreshInterval = 5;
+var $hostMemInfoShowFreePct = true;
+var $vmMemoryStartLimitWarn = true;
+var $vmMemoryOffset = 100;
+var $enableGuestAdditionsVersionDisplay = true;
+var $disableTabVMSnapshots = false;
+var $disableTabVMConsole = false;
+var $consoleResolutions = array('640x480','800x600','1024x768','1280x720','1440x900');
+var $consoleKeyboardLayout = 'LANGUAGE';
+var $nicMax = 4;
+var $enableAdvancedConfig = true;
+var $startStopConfig = true;
+#var $enforceVMOwnership = true;
+#var $vmQuotaPerUser = 2;
+var $enableVDE = false; 
+var $disableSataPortCount = false;
+var $enableLPTConfig = false;
+#var $enableHDFlushConfig = true;
+#var $eventListenerTimeout = 20;
+}
+
+
+

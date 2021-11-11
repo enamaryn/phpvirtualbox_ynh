@@ -1,0 +1,72 @@
+{
+    "name": "Virtualbox",
+    "id": "virtualbox",
+    "packaging_format": 1,
+    "description": {
+        "en": "Virtualbox and PhpVirtualBox for YunoHost.",
+        "fr": "Virtualbox et PhpVirtualBox pour YunoHost."
+    },
+    "url": "http://phpvirtualbox.sourceforge.net/",
+    "license": "PUEL",
+    "maintainer": {
+        "name": "Jeremy MANSON",
+        "email": "jeremy.manson@jamson.fr",
+        "url": "https://www.jmanson.fr"
+    },
+    "requirements": {
+        "yunohost": ">> 2.4.0"
+    },
+    "multi_instance": false,
+    "services": [
+        "nginx"
+    ],
+    "arguments": {
+        "install" : [
+            {
+                "name": "domain",
+		"type": "domain",
+                "ask": {
+                    "en": "Choose a domain name for phpvirtualbox",
+                    "fr": "Choisissez un nom de domaine pour phpvirtualbox"
+                },
+                "example": "example.com"
+            },
+            {
+                "name": "path",
+		"type": "path",
+                "ask": {
+                    "en": "Choose a path for phpvirtualbox",
+                    "fr": "Choisissez un chemin pour phpvirtualbox"
+                },
+                "example": "/virtualbox",
+                "default": "/virtualbox"
+            },
+            {
+                "name": "admin",
+		"type": "user",
+                "ask": {
+                    "en": "Choose an admin user",
+                    "fr": "Choisissez l’administrateur"
+                },
+                "example": "johndoe"
+            },
+            {
+                "name": "vboxip",
+                "ask": {
+                    "en": "Enter the virtualbox's host IP",
+                    "fr": "Entrez l'ip de l'hote virtualbox"
+                },
+                "example": "192.168.1.200"
+            },
+            {
+                "name": "language",
+                "ask": {
+                    "en": "Choose the application language",
+                    "fr": "Choisissez la langue de l'application"
+                },
+                "choices": ["fr", "en"],
+                "default": "fr"
+            }
+        ]
+    }
+}
